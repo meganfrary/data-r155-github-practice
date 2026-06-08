@@ -1,0 +1,10 @@
+---
+title: "GitHub Practice"
+author: "Megan Frary"
+format: html
+editor: visual
+---
+
+# Just a header
+
+Now some content, just to see.
