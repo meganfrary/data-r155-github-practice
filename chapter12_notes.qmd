@@ -1,0 +1,151 @@
+---
+title: "Chapter 12 Notes"
+subtitle: "mutate() and case_when()"
+author: "Megan Frary"
+date: today
+format:
+  html:
+    toc: true
+    toc-depth: 2
+    number-sections: true
+    embed-resources: true
+---
+
+# Quarto Notes
+
+# Load Packages
+```{r}
+#| message: false
+#| warning: false
+library(dplyr)
+library(dslabs)
+```
+
+# Vectorized Conditionals
+Logical conditions in R can do more than select values. They can also be used to return a new vector by assigning an output to each element based on one or more rules. Functions such as ifelse() and case_when() are called vectorized conditional functions because they evaluate conditions element-by-element across a vector and return a new vector of the same length.
+
+## review
+
+### subsetting with conditions
+
+```{r}
+x <- 1:6 # create x
+x>3 # logical vector
+x[x>3] # logical subsetting
+```
+
+### subassignment
+```{r}
+x[x>3] <- 99 #will assign 99 to all values where x>3
+x
+```
+That is the key new idea in this section.  
+* Vectorized conditional functions such as ifelse() and case_when() still test conditions element-by-element, but they do not drop nonmatching cases.  
+* Instead, they evaluate a condition for each element and return a new vector with one result for every position.
+
+## ifelse()
+goal: Label the vector of numbers greater than 3 as “Large” and others as “Small”.
+
+```{r}
+x <- c(3,2,3,6,5)
+length(x)
+```
+`x` is a vector with `{r} length(x)` values.
+
+```{r}
+ifelse(test = x > 3, yes = "Large", no = "Small")
+length(ifelse(x>3,"Large", "Small"))
+```
+**Important note:** `ifelse()` returns a NEW vector with a value for every position based on the condition. 
+
+## case_when()
+`dplyr` describes `case_when()` as a general vectorized if-else that evaluates rules in order and uses the first match for each element. This makes it especially useful when you have several categories to assign.
+
+```{r}
+case_when(c(3, 2, 3, 6, 5) > 3 ~ "Large", .default = "Small")
+```
+It's interesting how `.default` is used here. Also, now I can see the utility of `case_when()` so that you don't have to next a bunch of if statements!  
+
+## More than Two Categories
+```{r}
+scores <- c(55, 65, 75, 85, 95)
+```
+
+### Nested ifelse()
+```{r}
+ifelse(scores < 60, "Low",
+       ifelse(scores < 80, "Medium", "High"))
+```
+
+### Multiple Rule case_when()
+```{r}
+case_when(scores < 60 ~ "Low",
+          scores < 80 ~ "Medium",
+          TRUE        ~ "High")
+```
+
+# mutate()
+`mutate()` lets us store the result of the `case_when()` analysis in a new column! 
+
+`mutate()` creates new columns that are functions of existing columns. It can also modify an existing column if you reuse the same column name.
+
+📜 The SYNTAX: mutate(data, new_col = expression)
+
+Or with piping: name_data <- data %>% mutate(new_col = expression)
+
+* data is the data frame you are working with.  
+* new_col is the name of the new column you want to create.  
+* expression is the vector or calculation you want to store in that column.
+
+## Column Copy
+```{r}
+names(mtcars)
+```
+```{r}
+mtcars2 <- mtcars %>% 
+  mutate(new_column_copy = am)
+names(mtcars2)
+```
+
+### mutate() with Arithmetic
+```{r}
+measurements <- data.frame(height_in = c(60, 65, 70))
+measurements
+```
+
+The `measurements` data frame has one column: `{r} colnames(measurements)`.
+
+```{r}
+measurements %>%
+  mutate(height_cm = height_in * 2.54)
+```
+
+### case_when() inside mutate()
+```{r}
+student_scores <- data.frame(scores = c(55, 68, 72, 83, 91))
+student_scores <- student_scores %>%
+  mutate(
+    score_level = case_when(
+      scores < 60 ~ "Low",
+      scores < 80 ~ "Medium",
+      TRUE        ~ "High"
+    )
+  )
+head(student_scores)
+```
+`student_scores` has the columns `{r} paste(names(student_scores), collapse = " and ")`.
+
+## Overwrite Column Values
+```{r}
+unique(mtcars$am) 
+```
+```{r}
+cars_overwrite <- mtcars %>%
+  mutate(
+    am = case_when(
+      am == 0 ~ "Automatic", 
+      TRUE ~ "Manual")
+    )
+unique(cars_overwrite$am)
+```
+The `am` column in `cars_overwrite` has the unique values: `{r} unique(cars_overwrite$am)`.

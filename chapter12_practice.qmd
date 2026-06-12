@@ -1,0 +1,132 @@
+---
+title: "Chapter 12 Practice"
+subtitle: "mutate() and case_when()"
+author: "Megan Frary"
+date: today
+format:  html
+---
+
+## Task 0: load packages
+```{r}
+#| message: false
+#| warning: false
+
+library(dslabs)
+library(dplyr)
+```
+
+
+## Task 1: concept check
+
+**vectorized conditional functions** like `ifelse()` and `case_when()` return a new vector with one result for every position. 
+
+## Task 2: simple `ifelse()`
+
+**Goal:** Let's create an object called `height_label` using `ifelse()` to label each `height` in the dataset `heights` as "Tall" if `height` is greater than 68 and "Not Tall" otherwise.
+
+```{r}
+#?dslabs::heights
+heights <- dslabs::heights
+names(heights)
+```
+```{r}
+megan_height_label <- ifelse(heights$height>68, "Tall", "Not Tall") # my approach
+
+height_label <- ifelse(
+  test = heights$height > 68,
+  yes = "Tall",
+  no = "Not Tall"
+)
+```
+
+```{r}
+table(height_label)
+length(height_label)
+nrow(heights)
+```
+`Table()` seems like a useful function that I don't know that we've encountered yet. It's handy to show the counts like that. 
+
+**Comment:** There are `{r} sum(height_label=="Tall")` tall people and `{r} sum(height_label == "Not Tall")` people. **Note:** I made those numbers show up by using inline code. Claude helped me figure out how to write it! 
+
+**Reflection:** `ifelse()` returned a label for each row. I know this because `length(height_label)` and `nrow(heights)` return the same number which menas they have the same length. 
+
+## Task 3: recode with mutate() and case_when()
+
+**Goal:** We want to label cars based on their mileage as low MPG (mpg < 15), high MPG (mpg > 25), or medium MPG (otherwise).
+
+```{r}
+mpg_recode <- mtcars %>%
+  mutate(mpg_class=case_when(
+    mpg > 25 ~ "High MPG",
+    mpg < 15 ~ "Low MPG",
+    TRUE ~ "Medium MPG"
+  ))
+```
+
+```{r}
+table(mpg_recode$mpg_class)
+head(mpg_recode)
+sum(mpg_recode$mpg_class == "Low MPG")
+```
+
+**Comment:** The output of table is as expected, with three different labels. There are `{r} sum(mpg_recode$mpg_class == "Low MPG")` cars with low MPG, `{r} sum(mpg_recode$mpg_class == "High MPG")` cars with high MPG, and `{r} sum(mpg_recode$mpg_class == "Medium MPG")` cars with medium MPG.
+
+**Reflection:** By using `mutate()`, we added a new column to the existing dataframe which captures the mileage class of each car. We used `case_when()` to apply labels based on the `mpg` value in the dataset. 
+
+I can see how mutate might be very helpful in the ADATSS reports or just in data analysis more generally! 
+
+
+## Task 4: recode - name focus
+
+**Goal:** We want to create a new object called `stars_recode` which classifies stars according to their temperature (in a new column called `temp_group`).
+
+**Fun fact:** I spent about 4 years volunteering / working at the Adler planetarium in Chicago and have done lots of activities with kids about sorting stars according to their temperatures. 
+
+```{r}
+# ?dslabs::stars
+stars <- dslabs::stars
+
+# View(stars)
+colnames(stars)
+summary(stars$temp)
+```
+```{r}
+stars_recode <- stars %>%
+  mutate(
+    temp_group = case_when(
+    temp < 4000 ~ "Cool",
+    temp <= 7500 ~ "Warm",
+    TRUE ~ "Hot"
+  ))
+table(stars_recode$temp_group)
+head(stars_recode)
+```
+
+**Comment:** The column `temp` shows the temperature values but the column `temp_group` sorts them as cool, warm, or hot (relatively speaking).   The new column goes on the left side of the = sign. 
+
+**Reflection:** The order of the `case_when()` rules matter here because if we'd put the warm rule first then even the cool stars would be classified as warm. Although maybe not! I just wrote the warm rule as <= 7500, but we could have written the warm rule with an and statement (>4000 & <=7500) and then we could have put it first and it would have worked just fine. 
+
+
+## Task 5: unit conversion 
+
+**Goal:** We want to create `international_friendly_heights` from the `height` column of `heights` by overwriting the value that is in inches with one that is in centimeters. 
+
+```{r}
+heights <- dslabs::heights
+head(heights)
+summary(heights$height)
+```
+
+
+```{r}
+internationally_friendly_heights <- heights %>%
+  mutate(height = height* 2.54)
+head(internationally_friendly_heights)
+summary(internationally_friendly_heights$height)
+```
+
+**Comment:** This code overwrote the column because we used an existing column name. If we'd given it a new name, then it would have added on an additional column. I know because I used `head()` to look at the table structure. 
+
+**Reflection:** The new height values look reasonable for cm. In the new dataframe, the height values are now given in cm instead of inches.
+
+I can see how this replacement approach could be useful in the ADATSS data (if you were a confident coder!). For example, maybe we want to replace letter grades with grade groups. We wouldn't use this 1:1 replacement, but would use case_when() and could change a column that isn't useful in its current format into one that is. 

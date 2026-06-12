@@ -1,0 +1,159 @@
+---
+title: "Chapter 11 Notes"
+subtitle: "dplyr Subsetting"
+author: "Megan Frary"
+date: today
+format:
+  html:
+    code-fold: false
+execute:
+  warning: true
+  message: true
+---
+
+# Quarto
+```{r}
+#| eval=FALSE
+# just some test code that will not run
+x <- 1.5
+mean(x)
+```
+
+# Packages
+
+The `dplyr` package is part of the **tidyverse**, a collection of R packages designed for data science. The `dplyr` package gives you data-wrangling functions called **verbs**. These verbs help you work with data frames in readable steps. In this chapter, we will focus on `select()` for choosing columns and `filter()` for keeping rows.
+
+```{r}
+#| eval=FALSE
+
+# Install packages
+install.packages("dslabs")
+install.packages("dplyr")
+```
+
+```{r}
+#| message=FALSE
+library(dslabs)
+library(dplyr)
+```
+
+# The Pipe
+```{r}
+mtcars %>% head()
+```
+
+```{r}
+mtcars %>%
+  head()
+```
+
+# Selecting Columns
+
+## positive selection
+```{r}
+select(mtcars, mpg, cyl, hp)    # keep three columns
+```
+
+## negative selection
+```{r}
+select(mtcars, -gear)   # drop one column
+```
+
+## piping with select
+
+```{r}
+mtcars %>%
+  select(mpg,cyl,hp) # easier to read? I say "not really"
+```
+
+## subset with select
+```{r}
+I_Demo <- gapminder %>%
+  select(country,year,infant_mortality, continent)
+head(I_Demo)
+```
+```{r}
+# test this myself
+names(gapminder)
+```
+```{r}
+Your_Choice <- gapminder %>%
+  select(fertility, population, gdp)
+head(Your_Choice)
+```
+
+# Filtering Rows
+`filter()` keeps only rows for which the condition is `TRUE`. That means NA values aren't kept! 
+
+## single condition
+```{r}
+filter(mtcars,mpg >= 25) #high mileage cars
+```
+## piping with filter
+```{r}
+nrow(murders)
+```
+```{r}
+unique(murders$state)
+```
+```{r}
+No_Washington <- murders %>% 
+  filter(state != "District of Columbia")
+nrow(No_Washington)
+```
+```{r}
+unique(No_Washington$state)
+```
+## multiple conditions with AND
+```{r}
+filter(mtcars, mpg >= 25, cyl == 4)
+```
+```{r}
+filter(mtcars, mpg >= 25 & cyl == 4)
+```
+
+### with the pipe
+```{r}
+efficient <- mtcars %>%
+  filter(mpg >= 25, cyl == 4) # two conditions
+nrow(efficient) # how many cars are efficient? 
+```
+## multiple conditions
+
+### or | and %in%
+```{r}
+filter(mtcars, cyl == 4 | cyl == 6)
+```
+```{r}
+filter(mtcars, cyl %in% c(4, 6))
+```
+```{r}
+filter(mtcars, cyl == 4 | mpg >= 30)  # different variables
+```
+### with the pipe
+```{r}
+efficient_ish <- mtcars %>%
+  filter(mpg >= 25 | cyl == 4)    # two conditions
+nrow(efficient_ish) # how many cars are efficient_ish?
+```
+
+# filter() and select()
+🎯 Using us_contagious_diseases from dslabs, keep only rows for Alaska from 1980 and later. Then keep only the columns year, disease, and count. Store the result as alaska_disease.
+```{r}
+alaska_disease <- us_contagious_diseases %>%
+  filter(state == "Alaska",year >=1980) %>%
+  select(year, disease, count)
+head(alaska_disease)
+```
+
+# Application
+❓ Which automatic cars (am == 0) in mtcars have horsepower greater than 150?
+
+```{r}
+powerful_auto <- mtcars %>%
+  filter(am ==0, hp>150) %>%
+  select(hp,mpg)
+head(powerful_auto)
+nrow(powerful_auto)
+```
+
