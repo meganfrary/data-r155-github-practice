@@ -1,0 +1,194 @@
+---
+title: "Chapter 13 Practice"
+subtitle: "group_by() and summarize()"
+author: "Megan Frary"
+date: today
+format:
+  html:
+    toc: true
+    toc-depth: 2
+    number-sections: true
+    embed-resources: true
+---
+
+## Load Packages
+```{r}
+#| message: false
+#| warning: false
+library(dslabs)  # Data science labs package
+library(dplyr)   # Data manipulation package
+```
+
+## Task 1: single grouping 
+
+Let's load and examine the `stars` dataset. 
+
+```{r}
+data(stars)
+# ?stars
+colnames(stars)
+unique(stars$type)
+```
+**Comment:** The `type` column is the grouping variable and the `mean_temperature` and `mean_magnitude` are numeric summaries for all of the stars with a given type. 
+
+**Goal:** We want to find the mean temperature and mean magnitude for each type of star in the stars dataset. 
+
+```{r}
+twinkle_twinkle <- stars %>%
+  group_by(type) %>%
+  summarize(
+    mean_temperature = mean(temp),
+    mean_magnitude = mean(magnitude),
+    .groups="drop"
+  )
+```
+
+```{r}
+twinkle_twinkle
+is_grouped_df(twinkle_twinkle)
+```
+
+**Comment:** The output shows one row for each type of star and the summary columns show the mean values of those otehr variables for all stars with a given type. 
+
+**Reflection:** The scientist in me doesn't like that there's not a way to attach units to the column names. I don't like creating a summary table like this without being explicit about the units of those numerical values. 
+
+By grouping by `type`, the `mean()` can operate on only the rows with a given type instead of the whole dataset. This is a really useful approach because we often want to do this kind of statistical analysis on a certain group. Ooh... maybe this is how you find the mean course grade for students with a certain demographic group in the ADATSS data?!? For example, given students who have the label of freshman, what is their average course grade? I'm going to go check the code... Yes, I see lots of `group_by()` lines followed by `summarise()`. But we used `summarize()`. The help suggests these are the same function. I wonder why there are two...
+
+## Task 2: single grouping + three statistics 
+
+Let's see what the `olive` data looks like first.
+
+```{r}
+data(olive)
+# ?olive
+colnames(olive)
+unique(olive$region)
+```
+
+**Goal:** By using the `region` variable as my grouping variable, I will summarize the `palmitoleic` column. We want to know the mean of the fatty acid, the standard deviation, and the number of rows. I'll store this as `Olive_Garden`. 
+
+```{r}
+# As usual, I did this a slightly different way than the chapter guide says, so I'll leave mine and then compare them. 
+megan_Olive_Garden <- olive %>%
+  group_by(region)%>%
+  summarize(
+    mean_value = mean(palmitoleic,na.rm=TRUE),
+    sd_value = sd(palmitoleic,na.rm=TRUE),
+    n = n(),
+    .groups = "drop"
+  )
+
+fatty_acid <- "palmitoleic"
+
+Olive_Garden <- olive %>%
+  group_by(region) %>%
+  summarize(
+    mean_value = mean(.data[[fatty_acid]], na.rm = TRUE),
+    sd_value   = sd(.data[[fatty_acid]], na.rm = TRUE),
+    n          = n(),
+    .groups = "drop"
+  )
+
+identical(megan_Olive_Garden,Olive_Garden)
+```
+```{r}
+Olive_Garden
+arrange(Olive_Garden, desc(mean_value))
+is_grouped_df(Olive_Garden)
+```
+
+**Comment:** Olives from Southern Italy have the highest mean value of palmitoleic acid. There are 323 data points from Southern Italy, 98 from Sardinia, and 151 from Northern Italy. 
+
+**Reflection:** `region` is the grouping variable because we're interested in how the fatty acid content varies from region to region (this seems like a super obvious explanation to me). We want the summary of the fatty acid content because that's the variable we're interested in. 
+
+## Task 3: counting unique values
+
+Let's explore the `us_contagious_diseases` dataset.
+
+```{r}
+data("us_contagious_diseases")
+# ?us_contagious_diseases
+colnames(us_contagious_diseases)
+```
+**Goal:** Find the number of unique diseases in the column `diseases`
+
+```{r}
+# ✅ Check unique diseases
+unique(us_contagious_diseases$disease)
+
+# ✅ Count unique diseases
+# count(unique(us_contagious_diseases$disease))
+length(unique(us_contagious_diseases))
+```
+**Coding reflection:** Wow, that was harder than I thought it should be but I was thinking you wanted us to use `count()` somehow to get the number of unique diseases, not just say how many unique diseases there were. The wording was kind of confusing and I need to get Claude to help me, but mostly I just needed to figure out that I was trying to do the wrong thing (count how many times each showed up vs. name that there were 7 diseases). 
+
+There are `r length(unique(us_contagious_diseases$disease))` unique diseases within the `disease` column of the `us_contagious_diseases` dataset. They are `r paste(unique(us_contagious_diseases$disease), collapse = ", ")`.
+
+**Reflection:** We need `unique()` to first identify the different (or unique) values in the `disease` column and then we needed `length()` to figure out how many entries were in that vector. 
+
+**Goal:** Find the number of unique states in the column `states`
+
+```{r}
+# ✅ Check unique states
+unique(us_contagious_diseases$state)
+
+# ✅ Count unique states
+length(unique(us_contagious_diseases$state))
+```
+There are `r length(unique(us_contagious_diseases$state))` unique states within the `state` column of the `us_contagious_diseases` dataset.
+
+
+## Task 4: make & test a prediction
+
+**Prediction:** There are 51 states and 7 diseases so there will be 51 x 7 = 357 groups. 
+
+**Goal:** Test that prediction
+```{r}
+categorical_counts <- us_contagious_diseases %>%
+  group_by(state, disease) %>%
+  count()
+
+categorical_counts
+nrow(categorical_counts)
+```
+
+**Comment:** My prediction was correct! There are 357 rows in `categorical_counts`. 
+
+**Reflection:** Grouping is useful because we might want to explore which diseases are most prevalent in which states. By using `group_by()` with more than one variable, we can get a clearer picture of the data by state and disease. Personally, I'd want to then normalize by the population of each state, so that would mean using `mutate()` to add a column that somehow factored in the state population and divided the count by the population. 
+
+**Question:** I don't see why we sometimes use `n()` (e.g., in the Olive_Garden one) and sometimes use `count()` (in the example above). I asked Claude to explain it. 
+
+## Task 5: national mean counts by disease
+
+**Goal:** Create an object called `Infectious_Burden` which has the national mean of the count of a disease for the three most prevalent diseases in the US. To do so, I have to create a variable I called `national_mean`. 
+
+```{r}
+Infectious_Burden <- us_contagious_diseases %>%
+  group_by(disease) %>%
+  summarize(
+    national_mean = mean(count,na.rm=TRUE),
+    .groups = "drop"
+  )%>%
+  arrange(desc(national_mean))%>%
+  slice_head(n=3)
+```
+
+```{r}
+Infectious_Burden
+nrow(Infectious_Burden)
+is_grouped_df((Infectious_Burden))
+```
+
+**Comment:** The three diseases with the highest mean counts are measles, pertussis, and mumps. I know that there are only three rows because `nrow()` returned `3`. 
+
+**Reflection:** We need to first group by disease before finding the mean because we only want the mean within each disease group and that's what `group_by()` does. 
+
+This was a confusing task because we had to find the `mean` of a variable named `count` and I am already confused about the `count()` function. 
+
+## Task 6: final reflection
+
+If we want a summary of a whole dataset, we can use `sumarry` which gives a high level statistical overview. However, if we want to do any statistical analysis of certain groups within a dataset, then we need to start with `group_by()`. After using that function, we can then use `count()` for a frequency table and also use `summarize()`. There's a lot of utility in being able to analyze parts of a dataset in this way. 
+
+**Reflection:** In terms of curiosity, you'll see in my notes above that I am curious about `n()` and `count()` and also curious about how `group_by()` might be used in the ADATSS data. 
+
+**What I learned about n() and count()**: Claude helped me see that I use `n()` within `summarize()` if I want to know how many rows there are within each group. I can name it whatever I want and call it with `n()` -- but without any arguments. On the other hand, `count()` is a standalone function which creates a column called `n`. It actually combines `groupby()` and `summarize(n())` into a single step. This makes sense to me now (I think). Part of my confusion is about how "count" is used in other programs to essentially do the work of `n()`. But now I see the different functionality of each and that's useful. I will test this out in the wildfire activity.

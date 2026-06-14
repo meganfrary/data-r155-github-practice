@@ -1,0 +1,144 @@
+---
+title: "Chapter 13 Notes"
+subtitle: "group_by() and summarize()"
+author: "Megan Frary"
+date: today
+format:
+  html:
+    toc: true
+    toc-depth: 2
+    number-sections: true
+    embed-resources: true
+---
+
+# Loading Packages
+```{r}
+#| message: false
+#| warning: false
+library(dslabs)  # Data science labs package
+library(dplyr)   # Data manipulation package
+```
+
+# count()
+```{r}
+mtcars %>%
+  count(cyl)
+```
+
+### count() vs length()
+length() counts how many values are in a vector.  
+count() counts rows in a data frame for each category or combination of categories.
+
+### count() with sorting
+Count cars by cylinder and sort from largest group to smallest group. `sort = TRUE` arranges the result so the largest count appears first. The counts are the same as before; only the row order changed.
+```{r}
+mtcars %>%
+  count(cyl, sort = TRUE)
+```
+
+## count multiple variables
+Count how many cars fall into each combination of cylinder count and transmission type.
+```{r}
+mtcars %>%
+  count(cyl, am)
+```
+If our question is only “How many rows are in each category?”, `count()` is enough. But what if our question asks about averages, maximums, spread, or other statistics? We’ll need `summarize()`.
+
+# summarize()
+```{r}
+mtcars %>% 
+  summarize(mean_mpg = mean(mpg))
+```
+
+```{r}
+mtcars %>% 
+  summarize(mean_mpg = mean(mpg),
+            max_mpg = max(mpg),
+            count = n())
+```
+`summary()` is a base R function that gives a quick overall description of an object, such as basic statistics for each variable in a data frame. `summarize()` from `dplyr` is used to create your own summary results, usually after `group_by()`, such as the mean or count for each group.
+
+## count() vs summarize()
+```{r}
+mtcars %>%
+  group_by(cyl) %>%
+  summarize(n = n())
+```
+
+# group_by()
+`group_by()` changes the behavior of summary functions. 🗣 `group_by(cyl)` splits the cars into groups based on cylinder count, and `summarize()` calculates `mean(mpg)` for each group. `mean_mpg` is the name of the new summary column.
+
+```{r}
+cyl_means <- mtcars %>%
+  group_by(cyl) %>%
+  summarize(mean_mpg = mean(mpg))
+cyl_means
+```
+
+## explicit vs default naming
+```{r}
+mtcars %>%
+  group_by(cyl) %>%
+  summarize(mean(mpg))      
+
+```
+
+# Multiple Statistics
+```{r}
+cyl_stats <- mtcars %>%
+  group_by(cyl) %>%
+  summarize(mean_mpg = mean(mpg),
+            sd_mpg   = sd(mpg),
+            n        = n())
+cyl_stats
+```
+
+# Multiple Variables
+`group_by()` with one column creates one group for each unique value in that column. `group_by()` with two columns creates one group for each unique combination of values.
+
+```{r}
+sort(unique(mtcars$cyl))
+sort(unique(mtcars$am))
+```
+```{r}
+mtcars %>%
+  group_by(cyl, am) %>%
+  summarize(avg_mpg = mean(mpg),
+            count = n())
+```
+## ungroup
+
+```{r}
+mtcars %>%
+  group_by(cyl, gear) %>%
+  summarize(mean_mpg = mean(mpg))   # no .groups set
+```
+
+```{r}
+cyl_gear_stats <- mtcars %>%
+  group_by(cyl, gear) %>%
+  summarize(mean_mpg = mean(mpg))   # no .groups set
+```
+```{r}
+group_vars(cyl_gear_stats)  # what groups remain?
+```
+```{r}
+is_grouped_df(cyl_gear_stats) # expect TRUE
+```
+```{r}
+cyl_gear_stats_drop <- mtcars %>%
+  group_by(cyl, gear) %>%
+  summarize(mean_mpg = mean(mpg), .groups = "drop")
+```
+
+```{r}
+group_vars(cyl_gear_stats_drop)  # expect character(0)
+is_grouped_df(cyl_gear_stats_drop) # expect FALSE
+```
+```{r}
+cyl_gear_stats_ungroup <- mtcars %>%
+  group_by(cyl, gear) %>%
+  summarize(mean_mpg = mean(mpg)) %>%
+  ungroup()
+```
+
