@@ -1,0 +1,162 @@
+---
+title: "Chapter 16 Practice"
+subtitle: "ggplot2"
+author: "Megan Frary"
+date: today
+toc: true
+toc-depth: 2
+number-sections: true
+format:
+  html:
+    code-fold: false
+---
+
+# Task 0: Load Packages
+
+```{r}
+#| message: false
+#| warning: false
+library(dslabs)  # Data science labs package
+library(dplyr)   # Data manipulation package
+library(ggplot2) # Data visualization
+```
+
+# Task 1: Quick recall
+
+The three core `ggplot2()` steps are:  
+
+- **supply a data frame:** First we have to tell `ggplot()` what the dataframe is that we intend to plot. That will kind of set up the blank canvas that initiates the plotting process. It will also let `ggplot()` know where to look later for the following steps. 
+- **map aesthetics:** Next we use `aes()` to map the aesthic parts of the graph, although this is kind of an overstatement because really what we're doing here is letting it know what to use as the x and y values. Using `+` we can specify different layers of the graph which each have their own `aes()` call. 
+- **add geometric objects:** Finally, after establishing the x and y values, we use `geom_*()` functions to put the data onto the graph, e.g., through `geom_point` to make a scatter plot. 
+
+# Task 2: Scatter plot
+
+**Goal:** Create a scatterplot from the built-in iris dataset, and save it in an object called Pretty_Flowers. Put sepal length on the horizontal axis and petal length on the vertical axis. Color the points by species so that each species has a different color. Make the points moderately large so they are easy to see. Finally, label the x-axis as “Sepal Length (cm)” and the y-axis as “Petal Length (cm)”.
+
+```{r}
+Pretty_Flowers <- iris %>%
+  ggplot(aes(x = Sepal.Length, y = Petal.Length, color = Species))+
+  geom_point(size = 3)+
+  xlab("Sepal Length (cm)")+
+  ylab("Petal Length (cm)")
+
+class(Pretty_Flowers)
+Pretty_Flowers
+```
+
+**Comment:** We can see from this plot that different species have different petal and sepal lengths. The setosa are the smallest (in both dimensions) while the viginica are the largest (although with more variation). 
+
+# Task 3: Group comparison with box plot
+
+**Goal:** Create a boxplot from the built-in iris dataset and store it in an object called Petal_Spread. Put species on the horizontal axis and petal width on the vertical axis. For each species, draw a separate boxplot showing the spread and typical values of petal width. Fill each box with a different color according to species, but remove the legend so only the colored boxplots and axis labels indicate which species is which.
+
+```{r}
+Petal_Spread <-  iris %>%
+  ggplot(aes(x = Species, y = Petal.Width, fill = Species)) + 
+  geom_boxplot(show.legend = FALSE) + 
+  ylab("Petal Width (cm)")
+
+class(Petal_Spread)
+Petal_Spread
+```
+**Comment:** The virginica irises seem to have the widest distribution of petal widths (which matched what we found with the other flower dimensions in the previous section). While a table could be used to summarize the information shown in the graph, the visual requires less work on our part to quickly compare one to the other.  
+
+Let's try to make the table just for comparison. It's definitely not as easy to draw conclusions from that! 
+
+```{r}
+iris %>% 
+  group_by(Species)%>%
+  summarize(n = n(),
+            min_width = min(Petal.Width),
+            q1_width = quantile(Petal.Width, 0.25),
+            mean_width = mean(Petal.Width),
+            q3_width = quantile(Petal.Width, 0.75),
+            max_width = max(Petal.Width),
+            .groups = "drop")
+```
+
+
+# Task 4: Density plot 
+
+**Goal:** Create a density plot using the built-in CO2 dataset and store the plot in an object called CO2_Graph. Put CO2 uptake on the horizontal axis. Use plant type to define separate smooth curves, so each plant type has its own density curve filled with a different color. Make the filled areas partially transparent so the curves can overlap and still be visible where they intersect. Finally, add the title “CO2 Uptake by Plant Type” (use ggtitle()) at the top of the plot.
+
+```{r}
+CO2_Graph <- CO2 %>%
+  ggplot(aes(x = uptake, fill = Type))+
+  geom_density(alpha = 0.5) + 
+  ggtitle("CO2 uptake by plant type")
+
+CO2_Graph
+```
+
+**Comment:** From this graph, we can see that the plants in Mississippi take up less CO2 than those in Quebec. Both distributions are somewhat bimodal with two different "maxima". The fact that these graphs overlap one another tells me that there are lot of plants in both regions with the same CO2 uptake. This might be because they are the same kind of plants or it might be because the conditions are different. We can't know which conclusion to draw without more information. 
+
+# Task 5: Histogram
+
+**Goal:** Create a graph from the heights dataset and save it in an object called Tall_Density. Put height (in inches) on the horizontal axis. Draw a histogram of heights using bars that are 1 inch wide, filled in blue with white borders. Scale the histogram so that the vertical axis shows density (proportion), not raw counts. On top of this, add a smooth density curve that shows the overall shape of the height distribution, using a dark orange line. Fill the area under that density curve with the same dark orange color, but make it partially transparent so you can still see the blue histogram bars underneath. Label the x-axis “Height (inches)” and the y-axis “Density” (Hint: See Layering geoms and use geom_histogram() first, then geom_density().)
+
+```{r}
+Tall_Density <- heights%>%
+  ggplot(aes(x = height)) +
+  geom_histogram(aes(y = after_stat(density)),
+                 binwidth = 1,
+                 fill     = "blue",
+                 color    = "white") +
+  geom_density(color    = "darkorange",
+            fill      = "darkorange",
+            alpha     = 0.3,
+            linewidth     = 1) +
+  xlab("Height (inches)") +
+  ylab("Density")
+```
+**Coding reflection:** I was really puzzled by this bit of code: `geom_histogram(aes(y = after_stat(density))`. I knew that I needed `geom_histogram`, but didn't know that I should put `y = ` in the blank. I first guessed `height` but that didn't really work. It gave a graph, but the orange line wasn't as expected so I knew something was off. I had to ask Claude for help. I pasted in the goal and my code, asking about that line specifically and saying that I didn't think `height` was right but didn't know what to use instead. It makes sense now that I should have put y because we wanted to define the y-axis. Since we hadn't learned to use `after_stat()` though, that threw me off a bit. 
+
+```{r}
+class(Tall_Density)
+head(heights)
+nrow(heights)
+
+Tall_Density
+```
+**Comment:** By adding the density graph, it makes it a little bit easier to see the overall distribution of heights. Because there is a very tall bar at 72", we might, without the density curve, describe the graph differently than with the density curve which smooths that point out. 
+
+# Task 6: Reflect 
+
+**When would a density graph be more useful than a histogram?** I don't really know because histograms are for data which can be placed into bins and it might be useful to really see what falls in each bin. However, the bin size does affect how the histogram plot looks, so if you picked an unreasonable bin size, then the density plot might be more useful (let's test this below). The density plot might also be better for continuous data where all x values are possible. 
+
+## Testing the effect of bin size
+
+```{r}
+Tall_Density_narrow <- heights%>%
+  ggplot(aes(x = height)) +
+  geom_histogram(aes(y = after_stat(density)),
+                 binwidth = 0.25,
+                 fill     = "purple",
+                 color    = "white") +
+  geom_density(color    = "darkgrey",
+            fill      = "darkgray",
+            alpha     = 0.3,
+            linewidth     = 1) +
+  xlab("Height (inches)") +
+  ylab("Density") + 
+  ggtitle("Bin size = 3 in")
+
+
+Tall_Density_wide <- heights%>%
+  ggplot(aes(x = height)) +
+  geom_histogram(aes(y = after_stat(density)),
+                 binwidth = 3,
+                 fill     = "turquoise",
+                 color    = "white") +
+  geom_density(color    = "darkgrey",
+            fill      = "darkgray",
+            alpha     = 0.3,
+            linewidth     = 1) +
+  xlab("Height (inches)") +
+  ylab("Density") + 
+  ggtitle("Bin size = 0.25 in")
+
+Tall_Density_wide
+Tall_Density_narrow
+```
+**Comment:** It's interesting to see the effect of bin size on the resulting graph! 

@@ -1,0 +1,217 @@
+---
+title: "Chapter 15 notes"
+author: "Megan Frary"
+format: html
+---
+
+```{r}
+set.seed(2025) #for reproducibility 
+```
+
+## Coin flips
+
+**Goal:** Flip 1000 fair coins (0 = heads, 1 = tails)
+
+Set notation: S = {head, tail}
+
+```{r}
+# sample(x, size, replace = FALSE, prob = NULL)
+coins <- sample(x = 0:1, size = 1000, replace = TRUE)
+```
+
+```{r}
+unique(coins)
+length(coins)
+typeof(coins)
+```
+```{r}
+# use sum to count the number of tails (=1)
+sum(coins)
+sum(1-coins)
+```
+**Comment:** Sum counts the tails because it's just adding up all of the values in `coins` and all tails have a value of 1. 
+
+## Dice rolls
+
+**Goal:** Simulate 10,000 rolls of a fair 6‑sided die and plot the results.
+```{r}
+dice <- sample(x=1:6, size = 10000, replace = TRUE)
+```
+
+```{r}
+hist(dice,
+     breaks = 6,
+     col = "lightgreen",
+     main = "10,000 fair die rolls", # plot title
+     xlab = "face value") #x-axis label
+```
+```{r}
+hist(dice,
+     breaks = seq(0.5,6.5, by = 1),
+     col = "lightgreen",
+     main = "10,000 fair die rolls (integer-aligned)", # plot title
+     xlab = "face value") #x-axis label
+```
+```{r}
+# Alternative display for discrete data 
+barplot(table(dice), 
+        main = "Counts by Die Face (table method)", 
+        col    = "lightblue",
+        xlab = "Face Value", 
+        ylab = "Count")
+```
+## Two dice
+
+**Goal:** Roll two dice 10,000 times, add the results, plot.
+```{r}
+sum_two <- sample(x=1:6, size = 10000, replace = TRUE) + sample(x=1:6, size = 10000, replace = TRUE)
+hist(sum_two,
+     breaks = seq(0.5,12.5, by = 1),
+     col = "salmon",
+     main = "10,000 fair TWO DICE rolls (integer-aligned)", # plot title
+     xlab = "face value") #x-axis label)
+```
+```{r}
+# colors()
+```
+
+## Symmetric data
+
+**Goal:** simulate 1000 adult female heights ~ N(64, 2.5^2)  
+
+```{r}
+heights <- rnorm(n=1000, mean = 64, sd = 2.5)
+hist(heights,
+     col    = "yellowgreen",
+     main   = "Simulated Female Heights",
+     xlab   = "Height (inches)")
+```
+```{r}
+mean(heights)
+sd(heights)
+```
+## Repeating simulation
+
+The function `replicate()` repeats an expression multiple times and collects the results. This control structure is like a loop is used to repeat sample estimate probabilities (simulations), resample data to estimate variability or confidence intervals (bootstrapping), model repeated trials of an experiment, generate synthetic data and more. This function is flexible as it can wrap any code, not just random generation.
+
+**Goal:** How variable is the number of tails in 5,000 flips? Repeat 100 times.
+
+```{r}
+tails_100 <- replicate(n = 100, expr = sum(sample(0:1,5000,TRUE)))
+summary(tails_100)
+```
+```{r}
+hist(tails_100,
+     col    = "gold",
+     main   = "Distribution of Tails in 5,000 Coin Flips (100 reps)",
+     xlab   = "Count of Tails")
+```
+## Normal data with replicate 
+
+**Goal:** Generate 50 random numbers, compare each to zero, and count how many are below zero.
+
+```{r}
+set.seed(1234)  # For reproducibility
+# Generate 50 random numbers to represent student attitudes from survey
+# with a normal distribution (mean = 2, sd = 3)
+x <-  rnorm(n=50,mean = 2, sd=3)
+print(x)
+```
+```{r}
+# Mark who opposes (score < 0), then count
+below_zero <- x < 0
+print(below_zero)
+
+# Count how many are below zero
+count <- sum(below_zero)
+print(count)
+```
+## Many samples simulation
+
+```{r}
+# ⚡ Test
+values_below_zero <- replicate(
+  n = 200,                                     # 200 hypothetical survey runs
+  expr = sum(rnorm(50, mean = 2, sd = 3) < 0)) # each run: 50 students, count opponents
+```
+
+```{r}
+mean(values_below_zero)
+sd(values_below_zero)
+quantile(values_below_zero, c(.1,.5,.9))  # 10th/50th/90th percentiles
+```
+```{r}
+mean(values_below_zero >= 15)  # How often do we see ≥15 opponents out of 50?
+```
+```{r}
+# Alternative way to calculate probability of halt
+# One-line simulation estimate:
+risk_halt <- mean(replicate(200, sum(rnorm(50, 2, 3) < 0)) >= 15)
+risk_halt
+```
+```{r}
+# Integer-aligned histogram + shading + on-plot probability
+threshold <- 15
+max_count <- max(values_below_zero)
+breaks_int <- seq(2.5, max_count + 0.5, by = 1)
+
+# ✅  Investigate
+hist(values_below_zero,
+     breaks = breaks_int,
+     col    = "lightpink",
+     main   = "Distribution of Opponents in 50-Student Surveys (200 reps)",
+     xlab   = "Count of Values Below Zero")
+
+
+abline(v = threshold, col = "red", lwd = 2, lty = 2) # Halt threshold
+abline(v = mean(values_below_zero), col = "blue", lwd = 2, lty = 1)  # Mean line
+
+legend("topright", 
+       legend = c("Halt Threshold (15)", "Mean Count"),
+       col = c("red", "blue"),
+       lty = c(2, 1),
+       lwd = 2,
+       bg = "white",
+       bty = "o")
+```
+## Fair dice check 
+
+A fair outcome means that each outcome in the sample space has an equal chance of occurring. For example, a fair six-sided die has an equal probability of landing on any of its faces (1 through 6), which is 1/6 or approximately 0.1667 for each face.
+
+A biased outcome means that some outcomes are more likely to occur than others. For example, a biased six-sided die might have a higher probability of landing on certain faces, such as 1 and 6, while other faces (like 2, 3, 4, and 5) have lower probabilities.
+
+The `prob` parameter specifies the probability weights for each element in the sampling pool.
+
+```{r}
+rolls <-  sample(1:6,1000,prob=c(.12, .13, .07, .23, .22, .23), replace = TRUE)
+round(prop.table(table(rolls)), 3)
+```
+**Goal:** Compare unfair to fair dice
+
+```{r}
+# ⚡ Test
+set.seed(8000)
+
+biased <- c(.12, .13, .07, .23, .22, .23)  # sums to 1
+friend_sum <- sample(1:6, size = 1000, replace = TRUE, prob = biased) +
+  sample(1:6, size = 1000, replace = TRUE, prob = biased)
+
+fair_sum <- sample(1:6, 1000, TRUE) + sample(1:6, 1000, TRUE) # no 'prob' = equal chance
+
+# Proportions of each sum
+ploaded <- prop.table(table(friend_sum))
+pfair <- prop.table(table(fair_sum))
+
+# ✅  Investigate
+# Side-by-side bar plot
+face_props <- rbind(Bias = ploaded, Fair = pfair)
+barplot(face_props,
+        beside = TRUE,
+        col    = c("tomato", "steelblue"),
+        main   = "Probabilities (2 Dice, 1000 rolls)",
+        xlab   = "Added Face Values",
+        ylab   = "Proportion")
+legend("topright", legend = c("Loaded", "Fair"),
+       fill = c("tomato", "steelblue"), bty = "n")
+```
+

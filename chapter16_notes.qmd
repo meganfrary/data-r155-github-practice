@@ -1,0 +1,185 @@
+---
+title: "Chapter 16 Notes"
+subtitle: "ggplot2"
+author: "Megan Frary"
+date: today
+toc: true
+toc-depth: 2
+number-sections: true
+format:
+  html:
+    code-fold: false
+---
+
+# Loading Packages
+
+```{r}
+# run once
+#install.packages("ggplot2")
+#| message: false
+#| warning: false
+library(dslabs)  # Data science labs package
+library(dplyr)   # Data manipulation package
+library(ggplot2) # Data visualization
+```
+
+# What is ggplot2?
+
+```{r}
+# ?ggplot()
+```
+
+# The Blank Canvas
+
+Load data
+```{r}
+data("divorce_margarine")  # Load the divorce_margarine data
+View(divorce_margarine)    # View the data frame
+```
+
+Start every plot by piping a data frame into `ggplot()`
+
+```{r}
+divorce_margarine %>% ggplot()
+```
+
+# Mapping Aesthetics
+
+Aesthetic mapping is the process of connecting variables in your data to visual properties of the plot, such as position, color, size, and shape. In ggplot2, this is done using the `aes()` function.
+
+```{r}
+# ⚡Code Example: Mapping aesthetics
+divorce_margarine %>%
+  ggplot(aes(x = divorce_rate_maine, y = margarine_consumption_per_capita))
+```
+🗣 Comment: The plot is still blank because we haven’t added any geometric objects (geoms) yet. The axes are now labeled by the mapped variables, even if there are no points yet. aes() connects data columns to visual positions. The aes() step comes before choosing a geom because we are first defining the mapping (what goes on the x- and y-axes, colors, etc.) and then deciding how to draw those mapped variables (points, lines, bars, etc.).
+
+🪞 Reflection: The aesthetics describe the underlying structure of the plot, and the geoms are just different ways of rendering that structure. By setting aes() inside ggplot() we create a shared mapping that all later geoms can reuse, instead of repeating ourselves for each layer.
+
+Geometric objects (geoms) are the actual shapes drawn on the plot: points, lines, bars, boxplots, etc. Each geom answers the question: Given these aesthetics, how should the data be drawn?
+
+# Scatterplots
+
+🎯 The GOAL: Add points to the plot using geom_point().
+
+```{r}
+# ⚡Code Example: Scatterplot
+divorce_margarine %>%
+  ggplot(aes(divorce_rate_maine, margarine_consumption_per_capita)) +
+  geom_point()
+```
+🎯 The GOAL: Map additional aesthetics inside geom_point(): color by year, size by divorce rate, and transparency (alpha) by margarine consumption.
+
+```{r}
+divorce_margarine %>%
+  ggplot(aes(x = divorce_rate_maine,   # Global aes mapping: x-axis
+             y = margarine_consumption_per_capita)) + # Global aes mapping: y-axis
+  geom_point(aes(color = year, size = 20))        # Local aes mapping: color points by year
+```
+```{r}
+# ⚡Code Example: Scatterplot with trend line
+divorce_margarine %>%
+  ggplot(aes(x = divorce_rate_maine, 
+             y = margarine_consumption_per_capita)) +
+  geom_point(aes(color = year)) +          # Scatter points
+  geom_smooth(method = "lm", se = FALSE)   # Add linear trend line
+```
+
+
+# Histograms
+
+🎯 The GOAL: Simulate a Tallness data frame with heights for 1,000 people in the USA and Canada each. In the column Country, make two groups labeled “USA” and “CAN”. USA heights are centered around 67 inches with a standard deviation of 2.5. CAN heights are centered around 66 inches with a standard deviation of 1.5. Tallness follows a normal distribution.
+
+```{r}
+# ⚡Code 
+set.seed(2025)
+Tallness <- data.frame(
+  Country = c(rep("USA", 1000), rep("CAN", 1000)),
+  Height  = c(rnorm(1000, 67, 2.5), rnorm(1000, 66, 1.5))
+)
+```
+
+```{r}
+nrow(Tallness)
+Tallness %>% 
+  group_by(Country)%>%
+  summarize(n = n(),
+            mean_height = mean(Height),
+            sd_height = sd(Height),
+            .groups = "drop")
+```
+
+```{r}
+# ⚡Code Example: Histogram
+Tallness %>%
+  ggplot(aes(Height)) +    # only x for histograms
+  geom_histogram()
+```
+🎯 The GOAL: Customize the histogram by setting fill, color, and binwidth.
+
+```{r}
+# ⚡Code Example: Customized Histogram
+Tallness %>%
+  ggplot(aes(Height)) +                # only x for histograms
+  geom_histogram(fill = "steelblue", 
+                 color = "white",      # white border gives gap between bars
+                 binwidth = 0.5)       # Set bin width to 0.5
+```
+## Density plot
+
+```{r}
+# ⚡Code Example: Density Plot
+Tallness %>%
+  ggplot(aes(x = Height)) +
+  geom_density(fill     = "purple",
+               alpha    = 0.4,
+               color    = "black",
+               linewidth = 4)
+```
+## overlaid histograms
+
+```{r}
+# ⚡Code Example: Overlaid Histograms
+tall_compared_fig <- Tallness %>%
+  ggplot(aes(Height, fill = Country)) +
+  geom_histogram(position = "identity", 
+                 alpha = 0.6)           # Set transparency to see overlap
+# ✅ Print the figure
+print(tall_compared_fig)
+```
+
+# Boxplots
+
+🎯 The GOAL: Build side-by-side boxplots of height by country using geom_boxplot(). Map Country to the x-axis and Height to the y-axis. Use fill = Country to color the boxes by country and set show.legend = FALSE to hide the legend. We’ll store the boxplot as Tall_Box.
+
+```{r}
+# ⚡Code Example: Boxplot
+Tall_Box <- Tallness %>%
+  ggplot(aes(Country, Height, fill = Country)) +
+  geom_boxplot(show.legend = FALSE)
+# ✅Print the boxplot
+Tall_Box
+```
+
+# Labels and Themes
+
+We can enhance our plots by adding axis labels and applying themes for better aesthetics.
+
+xlab() and ylab() functions set the labels for the x and y axes, respectively. Simply type the desired label text as a string inside the function.
+
+Additionally, ggtitle() adds a title to the plot.
+
+🎯 The GOAL: Add axis labels and a light theme to the boxplot of height by country.
+
+```{r}
+# ⚡Code Example: Boxplot with labels and theme
+Tall_Box <- Tallness %>%
+  ggplot(aes(Country, Height, fill = Country)) +
+  geom_boxplot(show.legend = FALSE) +
+  xlab("North American Country") +
+  ylab("Height (inches)") +
+  ggplot2::theme_light()
+# ✅Print the boxplot
+Tall_Box
+```
+

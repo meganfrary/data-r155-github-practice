@@ -1,0 +1,126 @@
+---
+title: "Chapter 15 Practice"
+author: "Megan Frary"
+date: today
+format:
+  html:
+    code-fold: false
+execute:
+  warning: true
+  message: true
+---
+
+```{r}
+set.seed(222) # for reproducibility
+```
+
+
+## Task 1: is the DND die fair? 
+
+**Goal:** 🎯 Simulate 300 rolls of a loaded or fair 20‑sided die (values 1:20) and store in big_die
+
+```{r}
+big_die <- sample(1:20, size = 300, replace = TRUE)
+any(big_die == 20)
+```
+Let's investigate `big_die`
+
+```{r}
+length(big_die)
+table(big_die)
+mean(big_die)
+```
+**Comment:** I see that the `lenngth` is `300`, as it should be. The `mean` is 10.46 which makes sense since it was a fair die. The table shows the distribution of values which seem "random enough" given 300 rolls. 
+
+If I wanted to test a loaded die, then I would have used the `prob` argument in `sample` and specified the probability of each outcome. 
+
+## Task 2: More DND things
+
+**Scenario:** A game store is running a weekend probability demo and asks you to help analyze two kinds of random outcomes. They want to know whether a 20-sided die behaves the way a fair die should over many rolls.
+
+### Step 1: D20 marathon
+
+**Goal:** 🎯 Simulate 5221 rolls of a fair 20-sided die. Store as boring_weekend using sample().
+
+```{r}
+boring_weekend <-  sample(1:20, 5221, replace=TRUE)
+```
+
+### Step 2: Quick frequency check
+
+**Goal:** 🎯 Create d20_counts: a table of how many times each face appeared.
+
+```{r}
+d20_counts <- table(boring_weekend)
+  print(d20_counts)
+```
+**Comment:** Since we did 5221 rolls, we'd expect each value to show up approximately 5221/20 (~250) times. The table shows that this is the case. 
+
+### Step 3: Hit rate
+
+**Goal:** 🎯 What proportion of rolls were natural 20s? (one line of code, no object)
+
+```{r}
+sum(boring_weekend == 20)
+mean(boring_weekend == 20)
+abs(mean(boring_weekend==20)-0.05) # I copied this from the quiz...
+```
+**Coding reflection:** It took me a while to figure out how to do this, but then I realized that I could use `sum()` and a logical test for `==20`. I first wrote it as `sum(d20_counts == 20)` and got an error. I couldn't figure out what was wrong so I just wrote `d20_counts ==20` hoping it would output something I could ponder. It showed me a table with values 1 to 20 and then `FALSE` for all of them. That's when I realized that I was looking at the table and not the raw data itself. So then I changed the code to `boring_weekend == 20` which output 5221 values, some of which showed `TRUE` so I knew I was on the right track. And then I put in `sum()` to get the count in a single line!
+
+Also, I didn't really think to do `mean(boring_weekend)==20` because we haven't really done anything like that before, but I saw it in the quiz. I'm still not entirely sure what it's giving back. I think the proportion of 20s, but I don't quite know why (based on how we've used `mean()` so far. 
+
+## Unofficial task 3: Baby blankets
+
+**Scenario:** A local hospital asks for help thinking through newborn blanket sizing by using simulated baby lengths. In both parts, your job is to simulate realistic outcomes, check the results, and decide whether the patterns you see seem reasonable.
+
+### Step 4: Baby blanket test
+
+**Goal:** 🎯 Simulate 100 newborn lengths (inches) with mean 20.0, SD 0.9. Store as blanketed_babies. Use rnorm().
+
+```{r}
+blanketed_babies <- rnorm(n=100, mean = 20.0, sd = 0.9)
+```
+
+Let's inspect that to make sure it worked as planned. 
+
+```{r}
+length(blanketed_babies)
+summary(blanketed_babies)
+```
+**Comment:** The length is `100` which is good and the mean is `{r} round(mean(blanketed_babies),2)` inches which is close to the specified value of 20.0 inches. 
+
+### Step 5: Too long? 
+
+**Goal:** 🎯 Using any(), check whether any babies in blanketed_babies are longer than 23 inches. Then count how many are over 23 inches. Do not store the result as a new object.
+
+```{r}
+any(blanketed_babies > 23)
+sum(blanketed_babies > 23)
+```
+**Comment:** I knew that the answer would be that there weren't any babies over 23 inches because I used `summary()` before and that told me that max length was `{r} round(max(blanketed_babies),2)` inches.
+
+**Coding reflection:** Every time I render this, it gives new random numbers. So my statement directly above might end up not applying, but it was true when I wrote it! Also, because the numbers could change, I used inline R code to give the max value there and the mean value in the comment above. 
+
+### Step 6: Week-to-week risk
+
+**Goal:** 🎯 Repeat Steps 4 and 5 for 1000 simulated weeks. Store a vector named weeks_too_long that records, for each simulated week, how many babies were longer than 23 inches. Hint: use replicate().
+
+```{r}
+weeks_too_long <- replicate(1000, 
+  expr=sum(rnorm(n=100, mean = 20.0, sd = 0.9)>23)
+)
+```
+
+**Reflection:** Well, I think I did that right because I used `replicate` for `1000` times and then set the sum to count when the equivalent of `blanketed_babies` was `>23'. But I need to examine it to see what it looks like. The environment pane alone isn't enough. I expect that it should have a length of 1000 and have some entries that are greater than 0 (but probably not too many).
+
+```{r}
+length(weeks_too_long)
+table(weeks_too_long)
+```
+**Comment:** Maybe I'm supposed to use `set.seed()` in each code chunk? I don't know how to not have the output change on me each time so that I can draw conclusions. 
+
+In terms of if the hospital needs longer blankets, I think the answer is "probably". It's likely that there will be a few weeks (out of the 1000, so over 20 years) when there will be a longer baby. 
+
+# Task 3 (official): Reflect
+
+In step 6, we used `replicate()` to test out 1000 different normal distributions of baby lengths to see how often there was a baby over 23". With `rnorm()`, we just get a single distribution and can answer the question about one set of babies. But it is helpful to sample lots of sets of babies and `replicate()` helps us do that. It's interesting that `rnorm()` gives one distribution, but it seems like `replicate()` kind of gives a distribution of distributions! 
